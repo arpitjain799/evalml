@@ -1,5 +1,6 @@
 """Component that imputes missing data according to a specified imputation strategy."""
 import pandas as pd
+from sklearn.preprocessing import StandardScaler as SkScaler
 
 from evalml.pipelines.components.transformers import Transformer
 from evalml.pipelines.components.transformers.imputers import KNNImputer, SimpleImputer
@@ -138,6 +139,12 @@ class Imputer(Transformer):
 
         X_numerics = X[[col for col in numeric_cols if col not in self._all_null_cols]]
         if len(X_numerics.columns) > 0:
+            if isinstance(self._numeric_imputer, KNNImputer):
+                scaler = SkScaler()
+                X_numerics = pd.DataFrame(
+                    scaler.fit_transform(X_numerics, y),
+                    columns=X_numerics.columns,
+                )
             self._numeric_imputer.fit(X_numerics, y)
             self._numeric_cols = X_numerics.columns
 
@@ -162,6 +169,9 @@ class Imputer(Transformer):
         Returns:
             pd.DataFrame: Transformed X
         """
+        if isinstance(self._numeric_imputer, KNNImputer):
+            scaler = SkScaler()
+            X = pd.DataFrame(scaler.fit_transform(X, y), columns=X.columns)
         X = infer_feature_types(X)
         if len(self._all_null_cols) == X.shape[1]:
             df = pd.DataFrame(index=X.index)
@@ -173,6 +183,11 @@ class Imputer(Transformer):
         if self._numeric_cols is not None and len(self._numeric_cols) > 0:
             X_numeric = X.ww[self._numeric_cols.tolist()]
             imputed = self._numeric_imputer.transform(X_numeric)
+            if isinstance(self._numeric_imputer, KNNImputer):
+                imputed = pd.DataFrame(
+                    scaler.inverse_transform(imputed),
+                    columns=X_numeric.columns,
+                )
             X_no_all_null[X_numeric.columns] = imputed
 
         if self._categorical_cols is not None and len(self._categorical_cols) > 0:
