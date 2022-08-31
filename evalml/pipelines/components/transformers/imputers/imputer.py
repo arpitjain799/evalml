@@ -42,7 +42,7 @@ class Imputer(Transformer):
         self,
         categorical_impute_strategy="most_frequent",
         categorical_fill_value=None,
-        numeric_impute_strategy="mean",
+        numeric_impute_strategy="knn",
         numeric_fill_value=None,
         boolean_impute_strategy="most_frequent",
         boolean_fill_value=None,
